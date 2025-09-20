@@ -36,7 +36,7 @@ df['Date'] = pd.to_datetime(df['Date'])
 df['TotalRevenue'] = df['Quantity'] * df['Price']
 df['Month'] = df['Date'].dt.month
 df['Year'] = df['Date'].dt.year
-df['MonthYear'] = df['Date'].dt.to_period('M')
+df['MonthYear'] = df['Date'].dt.to_period('M')  # Keep as Period initially
 
 # -----------------------------
 # Step 3: Sidebar Filters
@@ -64,8 +64,13 @@ col3.metric("🛒 Average Order Value", f"${average_order_value:,.2f}")
 # -----------------------------
 monthly_sales = filtered_df.groupby('MonthYear')['TotalRevenue'].sum().reset_index()
 
+# ✅ Convert MonthYear to datetime to avoid Seaborn TypeError
+monthly_sales['MonthYear'] = monthly_sales['MonthYear'].apply(lambda x: x.start_time if hasattr(x, 'start_time') else pd.to_datetime(x))
+monthly_sales['TotalRevenue'] = pd.to_numeric(monthly_sales['TotalRevenue'], errors='coerce')
+monthly_sales = monthly_sales.dropna(subset=['MonthYear', 'TotalRevenue'])
+
 plt.figure(figsize=(10,5))
-sns.lineplot(x='MonthYear', y='TotalRevenue', data=monthly_sales, marker='o')
+plt.plot(monthly_sales['MonthYear'], monthly_sales['TotalRevenue'], marker='o', color='blue')
 plt.title("Monthly Revenue Trend")
 plt.xticks(rotation=45)
 plt.ylabel("Revenue")
@@ -104,3 +109,4 @@ plt.clf()
 # -----------------------------
 st.subheader("Raw Data")
 st.dataframe(filtered_df)
+
